@@ -10,8 +10,6 @@ import urllib2
 from urllib2 import HTTPError
 import httplib
 
-import ssl   #add line 1  
-
 
 SHOOTER_API = 'http://www.shooter.cn/api/subapi.php'
 # OS_LANGUAGE_CODES = 'http://www.opensubtitles.org/addons/export_languages.php'
@@ -75,7 +73,7 @@ def fetchSubtitle(url):
         break;
       except:
         continue;
-  if len(json_data) == 0:
+  if json_data is None or len(json_data) == 0:
     Log('Wrong response from Shooter.cn API')
     return
 
@@ -101,6 +99,7 @@ def fetchSubtitle(url):
       break
 
   try :
+    Log.Debug(subtitle_to_download['link'])
     u = urllib2.urlopen(subtitle_to_download['link'].replace('https://','http://'))
     fileurl = os.path.join(folder, subtitle_to_download['subtitle_filename'])
     with io.open(fileurl, "wb") as subtitle_file:
@@ -122,6 +121,9 @@ class ShooterAgentMovies(Agent.Movies):
   languages = [Locale.Language.Chinese]  
   primary_provider = False
   contributes_to = ['com.plexapp.agents.imdb']
+  contributes_to = ['com.plexapp.agents.imdb', 'com.plexapp.agents.xbmcnfo', 'com.plexapp.agents.themoviedb', 'com.plexapp.agents.hama']
+  score_prefs_key = "subtitles.search.minimumMovieScore2"
+  agent_type_verbose = "Movies"
 
   def search(self, results, media, lang):
     Log.Debug("ShooterAgentMovies.search")
@@ -144,6 +146,9 @@ class ShooterAgentTVShows(Agent.TV_Shows):
   languages = [Locale.Language.Chinese]
   primary_provider = False
   contributes_to = ['com.plexapp.agents.thetvdb']
+  contributes_to = ['com.plexapp.agents.thetvdb', 'com.plexapp.agents.themoviedb','com.plexapp.agents.thetvdbdvdorder', 'com.plexapp.agents.xbmcnfotv', 'com.plexapp.agents.hama']
+  score_prefs_key = "subtitles.search.minimumTVScore2"
+  agent_type_verbose = "TV"
 
   def search(self, results, media, lang, manual):
     Log.Debug("ShooterAgentTVShows.search")
