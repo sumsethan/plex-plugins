@@ -10,10 +10,13 @@ import urllib2
 from urllib2 import HTTPError
 import httplib
 
+import ssl   #add line 1  
 
-SHOOTER_API = 'https://www.shooter.cn/api/subapi.php'
+
+SHOOTER_API = 'http://www.shooter.cn/api/subapi.php'
 # OS_LANGUAGE_CODES = 'http://www.opensubtitles.org/addons/export_languages.php'
 SHOOTER_PLEX_USERAGENT = 'plexapp.com v9.0'
+SHOOTER_PLEX_USERAGENT = 'SPlayer Build 1543'
 subtitleExt       = ['utf','utf8','utf-8','sub','srt','smi','rt','ssa','aqt','jss','ass','idx']
  
 def Start():
@@ -28,7 +31,7 @@ def fetchSubtitle(url):
 
   # check subtitle whether exists or not
   for ext in subtitleExt:
-    subtitle = "%s.%s" % (filename_without_extension, ext)
+    subtitle = "%s.zh.%s" % (filename_without_extension, ext)
     file_path = os.path.join(folder, subtitle)
     if os.path.exists(file_path):
       Log("subtitle file(s) has already existed.")
@@ -61,11 +64,17 @@ def fetchSubtitle(url):
   # user_agent = "SPlayerX 1.1.8 (Build 1113)"
   headers = {'Content-Type' : 'application/x-www-form-urlencoded', 'User-Agent' : SHOOTER_PLEX_USERAGENT}
   params = urllib.urlencode(post_data)
-
-  req = urllib2.Request(SHOOTER_API, params, headers)
-  response = urllib2.urlopen(req)
-  json_data = json.load(response)
-
+  json_data = None
+  for server in ["www", "svplayer", "splayer1", "splayer2", "splayer3", "splayer4", "splayer5", "splayer6", "splayer7", "splayer8", "splayer9"]:
+    for schema in ["http"]:
+      SHOOTER_API = schema + "://" + server + ".shooter.cn/api/subapi.php"
+      req = urllib2.Request(SHOOTER_API, params, headers)
+      response = urllib2.urlopen(req)
+      try:
+        json_data = json.load(response)
+        break;
+      except:
+        continue;
   if len(json_data) == 0:
     Log('Wrong response from Shooter.cn API')
     return
@@ -76,7 +85,7 @@ def fetchSubtitle(url):
       file_json = json_obj['Files'][0]
       subtitle_link = file_json['Link']
       subtitle_extension = file_json["Ext"]
-      subtitle_filename = "%s.%s" % (filename_without_extension, subtitle_extension)
+      subtitle_filename = "%s.zh.%s" % (filename_without_extension, subtitle_extension)
       subtitle_obj = {'ext' : subtitle_extension, 
                       'link' : subtitle_link,
                       'subtitle_filename' : subtitle_filename}
@@ -92,7 +101,7 @@ def fetchSubtitle(url):
       break
 
   try :
-    u = urllib2.urlopen(subtitle_to_download['link'])
+    u = urllib2.urlopen(subtitle_to_download['link'].replace('https://','http://'))
     fileurl = os.path.join(folder, subtitle_to_download['subtitle_filename'])
     with io.open(fileurl, "wb") as subtitle_file:
       subtitle_file.write(u.read())
@@ -100,9 +109,12 @@ def fetchSubtitle(url):
     Log.Debug("subtitle %s downloaded" % (subtitle_to_download['subtitle_filename']))
 
   except urllib2.HTTPError, e:
-    Log("HTTP Error:", e.code, link)
+    Log("HTTP Error:%s %s" % (e.code,subtitle_to_download['link']))
+
   except urllib2.URLError, e:
-    Log("URL Error:", e.reason, link)
+    Log("URL Error:%s %s" % (e.reason, subtitle_to_download['link']))
+  except Exception, e:
+    Log('Exception:%s %s' % (str(e), subtitle_to_download['link']))
 
 
 class ShooterAgentMovies(Agent.Movies):
